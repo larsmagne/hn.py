@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# Fetched from http://nirmalpatel.com/fcgi/hn.py
+# Updated to python3 by Lars Ingebrigtsen
+
 """
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -11,44 +15,41 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
 
+apt install python3-uritools python3-feedparser python3-furl python3-bs4
+
+"""
 
 from xml.sax.saxutils import escape
 
-import urllib, re, os, urlparse
-import HTMLParser, feedparser
-from BeautifulSoup import BeautifulSoup
+import urllib, re, os, sys
+import html, feedparser
+from bs4 import BeautifulSoup
 from pprint import pprint
 
 import codecs
 import sys
-streamWriter = codecs.lookup('utf-8')[-1]
-sys.stdout = streamWriter(sys.stdout)
 
-
-HN_RSS_FEED = "http://news.ycombinator.com/rss"
+HN_RSS_FEED = "https://news.ycombinator.com/rss"
 
 NEGATIVE    = re.compile("comment|meta|footer|footnote|foot")
 POSITIVE    = re.compile("post|hentry|entry|content|text|body|article")
 PUNCTUATION = re.compile("""[!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~]""")
 
-
 def grabContent(link, html):
-    
     replaceBrs = re.compile("<br */? *>[ \r\n]*<br */? *>")
     html = re.sub(replaceBrs, "</p><p>", html)
     
     try:
-        soup = BeautifulSoup(html)
-    except HTMLParser.HTMLParseError:
+        soup = BeautifulSoup(html, features="lxml")
+    except html.parser.HTMLParseError:
         return ""
     
     # REMOVE SCRIPTS
-    for s in soup.findAll("script"):
+    for s in soup.find_all("script"):
         s.extract()
     
-    allParagraphs = soup.findAll("p")
+    allParagraphs = soup.find_all("p")
     topParent     = None
     
     parents = []
@@ -60,13 +61,13 @@ def grabContent(link, html):
             parents.append(parent)
             parent.score = 0
             
-            if (parent.has_key("class")):
-                if (NEGATIVE.match(parent["class"])):
+            if (parent.has_attr("class")):
+                if (NEGATIVE.match(" ".join(parent["class"]))):
                     parent.score -= 50
-                if (POSITIVE.match(parent["class"])):
+                if (POSITIVE.match(" ".join(parent["class"]))):
                     parent.score += 25
                     
-            if (parent.has_key("id")):
+            if (parent.has_attr("id")):
                 if (NEGATIVE.match(parent["id"])):
                     parent.score -= 50
                 if (POSITIVE.match(parent["id"])):
@@ -75,7 +76,7 @@ def grabContent(link, html):
         if (parent.score == None):
             parent.score = 0
         
-        innerText = paragraph.renderContents() #"".join(paragraph.findAll(text=True))
+        innerText = paragraph.encode_contents().decode('utf-8')
         if (len(innerText) > 10):
             parent.score += 1
             
@@ -89,16 +90,16 @@ def grabContent(link, html):
         return ""
             
     # REMOVE LINK'D STYLES
-    styleLinks = soup.findAll("link", attrs={"type" : "text/css"})
+    styleLinks = soup.find_all("link", attrs={"type" : "text/css"})
     for s in styleLinks:
         s.extract()
 
     # REMOVE ON PAGE STYLES
-    for s in soup.findAll("style"):
+    for s in soup.find_all("style"):
         s.extract()
 
     # CLEAN STYLES FROM ELEMENTS IN TOP PARENT
-    for ele in topParent.findAll(True):
+    for ele in topParent.find_all(True):
         del(ele['style'])
         del(ele['class'])
         
@@ -109,57 +110,55 @@ def grabContent(link, html):
     
     fixLinks(topParent, link)
     
-    return topParent.renderContents()
+    return topParent.encode_contents().decode('utf-8')
     
 
 def fixLinks(parent, link):
-    tags = parent.findAll(True)
+    tags = parent.find_all(True)
     
     for t in tags:
-        if (t.has_key("href")):
-            t["href"] = urlparse.urljoin(link, t["href"])
-        if (t.has_key("src")):
-            t["src"] = urlparse.urljoin(link, t["src"])
+        if (t.has_attr("href")):
+            t["href"] = urllib.parse.urljoin(link, t["href"])
+        if (t.has_attr("src")):
+            t["src"] = urllib.parse.urljoin(link, t["src"])
 
 
 def clean(top, tag, minWords=10000):
-    tags = top.findAll(tag)
+    tags = top.find_all(tag)
 
     for t in tags:
-        if (t.renderContents().count(" ") < minWords):
+        if (t.encode_contents().decode('utf-8').count(" ") < minWords):
             t.extract()
 
 
 def killDivs(parent):
-    
-    divs = parent.findAll("div")
+    divs = parent.find_all("div")
     for d in divs:
-        p     = len(d.findAll("p"))
-        img   = len(d.findAll("img"))
-        li    = len(d.findAll("li"))
-        a     = len(d.findAll("a"))
-        embed = len(d.findAll("embed"))
-        pre   = len(d.findAll("pre"))
-        code  = len(d.findAll("code"))
+        p     = len(d.find_all("p"))
+        img   = len(d.find_all("img"))
+        li    = len(d.find_all("li"))
+        a     = len(d.find_all("a"))
+        embed = len(d.find_all("embed"))
+        pre   = len(d.find_all("pre"))
+        code  = len(d.find_all("code"))
     
-        if (d.renderContents().count(",") < 10):
+        if (d.encode_contents().decode('utf-8').count(",") < 10):
             if ((pre == 0) and (code == 0)):
                 if ((img > p ) or (li > p) or (a > p) or (p == 0) or (embed > 0)):
                     d.extract()
     
 
 def upgradeLink(link):
+    #link = link.encode('utf-8')
     
-    link = link.encode('utf-8')
-    
-    if (not (link.startswith("http://news.ycombinator.com") or link.endswith(".pdf"))):
+    if (not (link.startswith('https://news.ycombinator.com') or link.endswith('.pdf'))):
         linkFile = "upgraded/" + re.sub(PUNCTUATION, "_", link)
         if (os.path.exists(linkFile)):
             return open(linkFile).read()
         else:
             content = ""
             try:
-                html = urllib.urlopen(link).read()
+                html = urllib.request.urlopen(link).read().decode('utf-8')
                 content = grabContent(link, html)
                 filp = open(linkFile, "w")
                 filp.write(content)
@@ -169,12 +168,11 @@ def upgradeLink(link):
             return content
     else:
         return ""
-    
-    
+
 
 def upgradeFeed(feedUrl):
     
-    feedData = urllib.urlopen(feedUrl).read()
+    feedData = urllib.request.urlopen(feedUrl).read()
     
     upgradedLinks = []
     parsedFeed = feedparser.parse(feedData)
@@ -185,8 +183,8 @@ def upgradeFeed(feedUrl):
     rss = """<rss version="2.0">
 <channel>
 	<title>Hacker News</title>
-	<link>http://news.ycombinator.com/</link>
-	<description>Links for the intellectually curious, ranked by readers.</description>
+	<link>https://news.ycombinator.com/</link>
+	<description>Items from HackerNews.</description>
 	
     """
 
@@ -200,32 +198,14 @@ def upgradeFeed(feedUrl):
             <![CDATA[<a href="%s">Comments</a><br/>%s<br/><a href="%s">Comments</a>]]>
         </description>
     </item>
-""" % (entry.title, escape(entry.link), escape(entry.comments), entry.comments, content.decode('utf-8'), entry.comments)
+""" % (entry.title, escape(entry.link), escape(entry.comments), entry.comments, content, entry.comments)
 
     rss += """
 </channel>
 </rss>"""
 
-
     return rss
-    
-if __name__ == "__main__":  
-    print upgradeFeed(HN_RSS_FEED)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    sys.stdout.buffer.write(upgradeFeed(HN_RSS_FEED).encode('utf-8'))
