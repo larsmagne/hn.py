@@ -187,7 +187,7 @@ def upgradeFeed(feedUrl):
     """
 
     for entry, content in upgradedLinks:
-        content = re.sub("]]>", "", content)
+        content = content.replace("]]>", "")
         rss += u"""
     <item>
         <title>%s</title>
