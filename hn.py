@@ -149,8 +149,6 @@ def killDivs(parent):
     
 
 def upgradeLink(link):
-    #link = link.encode('utf-8')
-    
     if (not (link.startswith('https://news.ycombinator.com') or link.endswith('.pdf'))):
         linkFile = "upgraded/" + re.sub(PUNCTUATION, "_", link)
         if (os.path.exists(linkFile)):
@@ -189,6 +187,7 @@ def upgradeFeed(feedUrl):
     """
 
     for entry, content in upgradedLinks:
+        content = re.sub("]]>", "", content)
         rss += u"""
     <item>
         <title>%s</title>
