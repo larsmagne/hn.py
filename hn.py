@@ -20,15 +20,10 @@ apt install python3-uritools python3-feedparser python3-furl python3-bs4
 
 """
 
+import urllib, re, os, sys, html, feedparser
 from xml.sax.saxutils import escape
-
-import urllib, re, os, sys
-import html, feedparser
 from bs4 import BeautifulSoup
 from pprint import pprint
-
-import codecs
-import sys
 
 HN_RSS_FEED = "https://news.ycombinator.com/rss"
 
@@ -115,7 +110,6 @@ def grabContent(link, html):
 
 def fixLinks(parent, link):
     tags = parent.find_all(True)
-    
     for t in tags:
         if (t.has_attr("href")):
             t["href"] = urllib.parse.urljoin(link, t["href"])
@@ -125,7 +119,6 @@ def fixLinks(parent, link):
 
 def clean(top, tag, minWords=10000):
     tags = top.find_all(tag)
-
     for t in tags:
         if (t.encode_contents().decode('utf-8').count(" ") < minWords):
             t.extract()
@@ -169,7 +162,6 @@ def upgradeLink(link):
 
 
 def upgradeFeed(feedUrl):
-    
     feedData = urllib.request.urlopen(feedUrl).read()
     
     upgradedLinks = []
