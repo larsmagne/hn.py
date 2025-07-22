@@ -149,7 +149,7 @@ def upgradeLink(link):
         else:
             content = ""
             try:
-                html = urllib.request.urlopen(link).read()
+                html = urllib.request.urlopen(link, timeout=10).read()
                 try:
                     html = html.decode('utf-8', 'replace')
                 except UnicodeDecodeError:
