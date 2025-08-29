@@ -186,7 +186,7 @@ def upgradeFeed(feedUrl):
         content = content.replace("]]>", "")
         rss += u"""
     <item>
-        <title>%s</title>
+        <title><![CDATA[%s]]></title>
         <link>%s</link>
         <comments>%s</comments>
         <description>
