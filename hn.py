@@ -28,10 +28,14 @@ from bs4 import BeautifulSoup
 from pprint import pprint
 import sys
 
-if len(sys.argv) > 1:
+if len(sys.argv) > 2:
     HN_RSS_FEED = sys.argv[1]
+    feedTitle = sys.argv[2]
+    feedId = sys.argv[1]
 else:
     HN_RSS_FEED = "https://news.ycombinator.com/rss"
+    feedTitle = "Hacker News"
+    feedId = "https://news.ycombinator.com/"
 
 NEGATIVE    = re.compile("comment|meta|footer|footnote|foot")
 POSITIVE    = re.compile("post|hentry|entry|content|text|body|article")
@@ -180,13 +184,13 @@ def upgradeFeed(feedUrl):
     for entry in parsedFeed.entries:
         upgradedLinks.append((entry, upgradeLink(entry.link)))
         
-    rss = """<rss version="2.0">
+    rss = u"""<rss version="2.0">
 <channel>
-	<title>Hacker News</title>
-	<link>https://news.ycombinator.com/</link>
-	<description>Items from HackerNews.</description>
+	<title>%s</title>
+	<link>%s</link>
+	<description>Items from %s</description>
 	
-    """
+    """ % (feedTitle, feedId, feedTitle)
 
     for entry, content in upgradedLinks:
         content = content.replace("]]>", "")
