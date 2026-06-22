@@ -206,15 +206,17 @@ def upgradeFeed(feedUrl):
             </item>
             """ % (entry.title, escape(entry.link), escape(entry.comments), entry.comments, content, entry.comments)
         else:
+            bubbles = BeautifulSoup(entry.content[0].value, "html.parser").find("a")["href"]            
             rss += u"""
             <item>
             <title><![CDATA[%s]]></title>
+            <author><![CDATA[%s]]></author>
             <link>%s</link>
             <description>
-            <![CDATA[%s<br/>]]>
+            <![CDATA[%s<br/><a href="%s">Comments</a>]]>
             </description>
             </item>
-            """ % (entry.title, escape(entry.link), content)
+            """ % (entry.title, entry.author, escape(entry.link), content, bubbles)
 
     rss += """
 </channel>
