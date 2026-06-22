@@ -16,6 +16,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+To install on Debian:
+
 apt install python3-uritools python3-feedparser python3-furl python3-bs4
 
 """
@@ -24,8 +26,11 @@ import urllib, re, os, sys, html, feedparser
 from xml.sax.saxutils import escape
 from bs4 import BeautifulSoup
 from pprint import pprint
+import sys
 
-HN_RSS_FEED = "https://news.ycombinator.com/rss"
+HN_RSS_FEED = sys.argv[1]
+if HN_RSS_FEED == "":
+    HN_RSS_FEED = "https://news.ycombinator.com/rss"
 
 NEGATIVE    = re.compile("comment|meta|footer|footnote|foot")
 POSITIVE    = re.compile("post|hentry|entry|content|text|body|article")
@@ -184,16 +189,27 @@ def upgradeFeed(feedUrl):
 
     for entry, content in upgradedLinks:
         content = content.replace("]]>", "")
-        rss += u"""
-    <item>
-        <title><![CDATA[%s]]></title>
-        <link>%s</link>
-        <comments>%s</comments>
-        <description>
+        if hasattr(entry, "comments"):
+            rss += u"""
+            <item>
+            <title><![CDATA[%s]]></title>
+            <link>%s</link>
+            <comments>%s</comments>
+            <description>
             <![CDATA[<a href="%s">Comments</a><br/>%s<br/><a href="%s">Comments</a>]]>
-        </description>
-    </item>
-""" % (entry.title, escape(entry.link), escape(entry.comments), entry.comments, content, entry.comments)
+            </description>
+            </item>
+            """ % (entry.title, escape(entry.link), escape(entry.comments), entry.comments, content, entry.comments)
+        else:
+            rss += u"""
+            <item>
+            <title><![CDATA[%s]]></title>
+            <link>%s</link>
+            <description>
+            <![CDATA[%s<br/>]]>
+            </description>
+            </item>
+            """ % (entry.title, escape(entry.link), content)
 
     rss += """
 </channel>
