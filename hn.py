@@ -28,8 +28,9 @@ from bs4 import BeautifulSoup
 from pprint import pprint
 import sys
 
-HN_RSS_FEED = sys.argv[1]
-if HN_RSS_FEED == "":
+if len(sys.argv) > 1:
+    HN_RSS_FEED = sys.argv[1]
+else:
     HN_RSS_FEED = "https://news.ycombinator.com/rss"
 
 NEGATIVE    = re.compile("comment|meta|footer|footnote|foot")
