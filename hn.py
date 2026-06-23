@@ -28,14 +28,22 @@ from bs4 import BeautifulSoup
 from pprint import pprint
 import sys
 
-if len(sys.argv) > 2:
-    HN_RSS_FEED = sys.argv[1]
-    feedTitle = sys.argv[2]
-    feedId = sys.argv[1]
+if len(sys.argv) > 1:
+    feedType = sys.argv[1]
 else:
-    HN_RSS_FEED = "https://news.ycombinator.com/rss"
+    feedType = "hn"
+
+if feedType == "hn":
+    feedUrl = "https://news.ycombinator.com/rss"
     feedTitle = "Hacker News"
     feedId = "https://news.ycombinator.com/"
+elif feedType == "bubbles":
+    feedUrl = "https://bubbles.town/feed"
+    feedTitle = "Bubbles"
+    feedId = feedUrl
+else:
+    print("Unknown feed type")
+    sys.exit()
 
 NEGATIVE    = re.compile("comment|meta|footer|footnote|foot")
 POSITIVE    = re.compile("post|hentry|entry|content|text|body|article")
@@ -194,7 +202,7 @@ def upgradeFeed(feedUrl):
 
     for entry, content in upgradedLinks:
         content = content.replace("]]>", "")
-        if hasattr(entry, "comments"):
+        if feedType == "hn":
             rss += u"""
             <item>
             <title><![CDATA[%s]]></title>
@@ -226,4 +234,4 @@ def upgradeFeed(feedUrl):
 
 
 if __name__ == "__main__":
-    sys.stdout.buffer.write(upgradeFeed(HN_RSS_FEED).encode('utf-8'))
+    sys.stdout.buffer.write(upgradeFeed(feedUrl).encode('utf-8'))
